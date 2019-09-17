@@ -6,6 +6,9 @@ in vec3 vPos;     // -1 < vPos.x < +1
 // -1 < vPos.y < +1
 //      vPos.z == 0
 
+const int NS = 2; // Number of spheres in the scene
+const int NL = 2; // Number of light sources in the scene
+
 out vec4 fragColor; 
  
 void main() {
