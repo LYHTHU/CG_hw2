@@ -5,7 +5,7 @@ uniform float uTime;   // TIME, IN SECONDS
 in vec3 vPos;          // POSITION IN IMAGE
 out vec4 fragColor;    // RESULT WILL GO HERE
 
-const int NS = 3; // Number of spheres in the scene
+const int NS = 2; // Number of spheres in the scene
 const int NL = 2; // Number of light sources in the scene
 const float eps = 1.0e-7;
 const vec3 eye = vec3(0.0, 0.0, 5.);
@@ -15,6 +15,9 @@ struct Sphere {
     vec3 center;
     vec3 rgb;
     float r;
+    vec3 ambiance;
+    vec3 diffuse;
+    vec4 specular;
 };
 
 struct Ray {
@@ -44,20 +47,23 @@ void init() {
     spheres[0].rgb = vec3(0., 0.75, 0.5);
     spheres[0].r = 0.6;
 
+    spheres[0].ambiance  = vec3(0.,.1,.1);
+    spheres[0].diffuse  = vec3(0.,.5,.5);
+    spheres[0].specular = vec4(0.,1.,1.,10.); // 4th value is specular power
+
     spheres[1].center = vec3(-1., 1.2, -0.4);
     spheres[1].rgb = vec3(0.7098, 0.7451, 0.2);
     spheres[1].r = 0.7;
 
-
-    spheres[2].center = vec3(0., -0.2, -1.);
-    spheres[2].rgb = vec3(0.498, 0.2471, 0.3725);
-    spheres[2].r = 1.0;
+    spheres[1].ambiance  = vec3(.1,.1,0.);
+    spheres[1].diffuse  = vec3(.5,.5,0.);
+    spheres[1].specular = vec4(1.,1.,1.,20.);
 
 
     lights[0].rgb = vec3(1., 1., 1.);
-    lights[0].src = vec3(0., 2., -2.1);
+    lights[0].src = vec3(1., 1., -0.5);
     lights[1].rgb = vec3(1., 1., 1.);
-    lights[1].src = vec3(0., 2., -1.9);
+    lights[1].src = vec3(-1., 0., -2.);
 }
 
 vec3 get_normal(Sphere s, vec3 pos) {
@@ -102,30 +108,44 @@ Ray reflect_ray(Ray rin, vec3 norm) {
 }
 
 
-bool is_in_shadow(vec3 pos, vec3 norm) {
+bool is_in_shadow(vec3 pos, vec3 norm, Light light) {
     pos = pos + 0.0001 * norm;
     bool ret = false;
-    for (int i = 0; i < NL; i++) {
-        Ray ray_l = get_ray(pos, lights[i].src);
-        for (int j = 0; j < NS; j++) {
-            if (intersect(ray_l, spheres[j]) > 0.) {
-                return true;
-            }
+    Ray ray_l = get_ray(pos, light.src);
+    for (int j = 0; j < NS; j++) {
+        if (intersect(ray_l, spheres[j]) > 0.) {
+            return true;
         }
     }
     return ret;
 }
 
 vec3 ray_tracing() {
-    Ray ray = get_ray(eye, screen_center+vec3(vPos.xy, 0));
     vec3 color = vec3(0., 0., 0.);
+    Ray ray = get_ray(eye, screen_center+vec3(vPos.xy, 0));
+    for (int i = 0; i < NL; i++) {
+        // show lights
+        // if(dot(normalize(lights[i].src - ray.src), ray.dir) > 0.99992) {
+        //     color = lights[i].rgb;
+        //     return color;
+        // }
+    } 
     for (int i = 0; i < NS; i++) {
         float t = intersect(ray, spheres[i]);
-        if (t > 0.) {
-            color += spheres[i].rgb;
-        }
-        else {
-            
+        if (t > 0.) {            
+            vec3 inter_point = ray.src + t*ray.dir;
+            vec3 N = get_normal(spheres[i], inter_point);
+            color = spheres[i].ambiance;
+            for (int j = 0; j < NL; j++) {
+                if(!is_in_shadow(inter_point, N, lights[j])) {
+                    Ray L = get_ray(inter_point, lights[j].src);
+                    Ray E = get_ray(inter_point, eye);
+                    Ray R = reflect_ray(L, N);
+                    color += lights[j].rgb * (spheres[i].diffuse * max(0., dot(N, L.dir)));
+                    color += lights[j].rgb * (spheres[i].specular.xyz* max(0., pow(dot(E.dir, R.dir), spheres[i].specular[3]) ) );
+                }
+            }
+
         }
     }
     return color;
