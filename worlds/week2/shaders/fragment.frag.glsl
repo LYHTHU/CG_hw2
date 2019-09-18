@@ -56,9 +56,9 @@ void init() {
 
 
     lights[0].rgb = vec3(1., 1., 1.);
-    lights[0].src = vec3(0., 2., -0.5);
+    lights[0].src = vec3(0., 2.*cos(uTime), -0.5);
     lights[1].rgb = vec3(1., 1., 1.);
-    lights[1].src = vec3(-1., 0., -1.);
+    lights[1].src = vec3(-1.*sin(1.*uTime), 0., -1.*sin(uTime));
 }
 
 vec3 get_normal(Sphere s, vec3 pos) {
@@ -108,7 +108,7 @@ bool is_in_shadow(vec3 pos, vec3 norm, Light light) {
     bool ret = false;
     Ray ray_l = get_ray(pos, light.src);
     for (int j = 0; j < NS; j++) {
-        if (intersect(ray_l, spheres[j]) > 0.) {
+        if (intersect(ray_l, spheres[j]) > 0.00001) {
             return true;
         }
     }
