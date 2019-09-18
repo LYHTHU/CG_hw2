@@ -13,7 +13,6 @@ const vec3 screen_center = vec3(0.0, 0.0, 2.5);
 
 struct Sphere {
     vec3 center;
-    vec3 rgb;
     float r;
     vec3 ambiance;
     vec3 diffuse;
@@ -44,17 +43,13 @@ Ray get_ray(vec3 p_src, vec3 p_dest) {
 void init() {
     // x, y: -2 ~ 2, z: 0~4
     spheres[0].center = vec3(1., 1., -1.);
-    spheres[0].rgb = vec3(0., 0.75, 0.5);
     spheres[0].r = 0.6;
-
     spheres[0].ambiance  = vec3(0.,.1,.1);
     spheres[0].diffuse  = vec3(0.,.5,.5);
     spheres[0].specular = vec4(0.,1.,1.,10.); // 4th value is specular power
 
     spheres[1].center = vec3(-1., 1.2, -0.4);
-    spheres[1].rgb = vec3(0.7098, 0.7451, 0.2);
     spheres[1].r = 0.7;
-
     spheres[1].ambiance  = vec3(.1,.1,0.);
     spheres[1].diffuse  = vec3(.5,.5,0.);
     spheres[1].specular = vec4(1.,1.,1.,20.);
@@ -130,24 +125,35 @@ vec3 ray_tracing() {
         //     return color;
         // }
     } 
+    
+    float t_min = 10000.;
+    int index = -1;
+
     for (int i = 0; i < NS; i++) {
         float t = intersect(ray, spheres[i]);
         if (t > 0.) {            
-            vec3 inter_point = ray.src + t*ray.dir;
-            vec3 N = get_normal(spheres[i], inter_point);
-            color = spheres[i].ambiance;
-            for (int j = 0; j < NL; j++) {
-                if(!is_in_shadow(inter_point, N, lights[j])) {
-                    Ray L = get_ray(inter_point, lights[j].src);
-                    Ray E = get_ray(inter_point, eye);
-                    Ray R = reflect_ray(L, N);
-                    color += lights[j].rgb * (spheres[i].diffuse * max(0., dot(N, L.dir)));
-                    color += lights[j].rgb * (spheres[i].specular.xyz* max(0., pow(dot(E.dir, R.dir), spheres[i].specular[3]) ) );
-                }
+            if (t < t_min) {
+                t_min = t;
+                index = i;
             }
-
         }
     }
+
+    if(index > -1) {
+        vec3 inter_point = ray.src + t_min*ray.dir;
+        vec3 N = get_normal(spheres[index], inter_point);
+        color = spheres[index].ambiance;
+        for (int j = 0; j < NL; j++) {
+            if(!is_in_shadow(inter_point, N, lights[j])) {
+                Ray L = get_ray(inter_point, lights[j].src);
+                Ray E = get_ray(inter_point, eye);
+                Ray R = reflect_ray(L, N);
+                color += lights[j].rgb * (spheres[index].diffuse * max(0., dot(N, L.dir)));
+                color += lights[j].rgb * (spheres[index].specular.xyz* max(0., pow(dot(E.dir, R.dir), spheres[index].specular[3]) ) );
+            }
+        }
+    }
+
     return color;
 }
 
