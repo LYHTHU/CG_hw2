@@ -42,13 +42,13 @@ Ray get_ray(vec3 p_src, vec3 p_dest) {
 // Setting the parameters of spheres and lights
 void init() {
     // x, y: -2 ~ 2, z: 0~4
-    spheres[0].center = vec3(1., 1., -1.);
+    spheres[0].center = vec3(0.5, 0.5, -1.);
     spheres[0].r = 0.6;
     spheres[0].ambiance  = vec3(0.,.1,.1);
     spheres[0].diffuse  = vec3(0.,.5,.5);
     spheres[0].specular = vec4(0.,1.,1.,10.); // 4th value is specular power
 
-    spheres[1].center = vec3(-1., 1.2, -0.4);
+    spheres[1].center = vec3(-0.5, 1.2, -0.4);
     spheres[1].r = 0.7;
     spheres[1].ambiance  = vec3(.1,.1,0.);
     spheres[1].diffuse  = vec3(.5,.5,0.);
@@ -56,9 +56,9 @@ void init() {
 
 
     lights[0].rgb = vec3(1., 1., 1.);
-    lights[0].src = vec3(1., 1., -0.5);
+    lights[0].src = vec3(0., 2., -0.5);
     lights[1].rgb = vec3(1., 1., 1.);
-    lights[1].src = vec3(-1., 0., -2.);
+    lights[1].src = vec3(-1., 0., -1.);
 }
 
 vec3 get_normal(Sphere s, vec3 pos) {
