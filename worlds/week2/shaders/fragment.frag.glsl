@@ -32,6 +32,15 @@ struct Light {
 Sphere spheres[NS];
 Light lights[NL];
 
+bool in_sphere(Light l) {
+    for (int i = 0; i < NS; i++) {
+        if (dot(l.src - spheres[i].center, l.src - spheres[i].center) < pow(spheres[i].r, 2.) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 Ray get_ray(vec3 p_src, vec3 p_dest) {
     Ray ret;
     ret.src = p_src;
@@ -73,7 +82,7 @@ float intersect(Ray r, Sphere s) {
     float d2 = dot(r.dir, r.dir); // should be 1
     float r2 = s.r*s.r;
     float delta = pow(dc_s, 2.) - d2*(dot(c_s, c_s) - r2);
-    if (delta < -1.*eps) {
+    if (delta < 0.) {
         // no intersect
         return -1.;
     } 
@@ -85,7 +94,7 @@ float intersect(Ray r, Sphere s) {
             return t1;
         }
         else {  // maybe inside the sphere
-            return t2;
+            return -1.;
         }
     }
     else {
@@ -104,6 +113,7 @@ Ray reflect_ray(Ray rin, vec3 norm) {
 
 
 bool is_in_shadow(vec3 pos, vec3 norm, Light light) {
+
     pos = pos + 0.0001 * norm;
     bool ret = false;
     Ray ray_l = get_ray(pos, light.src);
@@ -120,10 +130,11 @@ vec3 ray_tracing() {
     Ray ray = get_ray(eye, screen_center+vec3(vPos.xy, 0));
     for (int i = 0; i < NL; i++) {
         // show lights
-        // if(dot(normalize(lights[i].src - ray.src), ray.dir) > 0.99992) {
-        //     color = lights[i].rgb;
-        //     return color;
-        // }
+        if (in_sphere(lights[i])) continue;
+        if(dot(normalize(lights[i].src - ray.src), ray.dir) > 0.99999) {
+            color = lights[i].rgb;
+            return color;
+        }
     } 
     
     float t_min = 10000.;
@@ -138,7 +149,6 @@ vec3 ray_tracing() {
             }
         }
     }
-
     if(index > -1) {
         vec3 inter_point = ray.src + t_min*ray.dir;
         vec3 N = get_normal(spheres[index], inter_point);
@@ -149,7 +159,10 @@ vec3 ray_tracing() {
                 Ray E = get_ray(inter_point, eye);
                 Ray R = reflect_ray(L, N);
                 color += lights[j].rgb * (spheres[index].diffuse * max(0., dot(N, L.dir)));
-                color += lights[j].rgb * (spheres[index].specular.xyz* max(0., pow(dot(E.dir, R.dir), spheres[index].specular[3]) ) );
+                // That is where the bug is.
+                // Something in Pow. If specular >= 10., it will overflow.
+                float s = max(0., pow(dot(E.dir, R.dir), spheres[index].specular[3]) );
+                color += lights[j].rgb * (spheres[index].specular.xyz * s ) ;
             }
         }
     }
