@@ -11,6 +11,7 @@ const float eps = 1.0e-7;
 const vec3 eye = vec3(0.0, 0.0, 5.);
 const vec3 screen_center = vec3(0.0, 0.0, 2.5);
 
+
 struct Sphere {
     vec3 center;
     float r;
@@ -161,8 +162,16 @@ vec3 ray_tracing() {
                 color += lights[j].rgb * (spheres[index].diffuse * max(0., dot(N, L.dir)));
                 // That is where the bug is.
                 // Something in Pow. If specular >= 10., it will overflow.
-                float s = max(0., pow(dot(E.dir, R.dir), spheres[index].specular[3]) );
-                color += lights[j].rgb * (spheres[index].specular.xyz * s ) ;
+                // float s = max(0., pow(dot(E.dir, R.dir), spheres[index].specular[3]) );
+                float s;
+                float er = dot(E.dir, R.dir);
+                if (er > 0.) {
+                    s = max(0., exp(spheres[index].specular[3] * log(er) ) );
+                }
+                else {
+                    s = 0.;
+                }
+                color += lights[j].rgb * spheres[index].specular.xyz * s ;
             }
         }
     }
