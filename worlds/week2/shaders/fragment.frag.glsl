@@ -140,8 +140,8 @@ vec3 ray_tracing() {
     Ray ray = get_ray(eye, screen_center+vec3(vPos.xy, 0));
     for (int i = 0; i < NL; i++) {
         // show lights
-        if (hidden_by_sphere(lights[i])) continue;
         if(dot(normalize(lights[i].src - ray.src), ray.dir) > 0.99999) {
+            if(hidden_by_sphere(lights[i])) continue;
             color = lights[i].rgb;
             return color;
         }
